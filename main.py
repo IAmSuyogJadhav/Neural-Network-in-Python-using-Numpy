@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 np.random.seed(777)
 start = time.time()
 
@@ -12,7 +13,7 @@ m, n = x.shape
 
 # ------------------ Neural Network Parameters
 a2_nodes = 20
-a3_nodes = 10
+a3_nodes = 20
 a4_nodes = 1
 max_iter = 10000
 alpha = 0.3
@@ -119,11 +120,16 @@ for i in range(max_iter):
     j_history[i] = j
 
 
-print("\n**********************************************\n")
+print("\n\n**********************************************\n")
 # ------------------ Analysis
 train_prediction = predict(x, w1, w2, w3)
 print("Accuracy on the training set= ", 100*np.sum(train_prediction == y)/m)
 
+plt.plot(j_history, range(1, max_iter+1))
+plt.xlabel("Cost")
+plt.ylabel("No. of Iterations")
 end = time.time()
-print("Execution Time= %0.2f s" % (end - start))
+print("Execution Time= %0.2fs" % (end - start))
+plt.show()
+
 print("\n**********************************************\n")
