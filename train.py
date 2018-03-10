@@ -1,17 +1,29 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import time
 
 
-class NN(object):
+def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
+    plt.matshow(df_confusion, cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(df_confusion.columns))
+    plt.xticks(tick_marks, df_confusion.columns, rotation=45)
+    plt.yticks(tick_marks, df_confusion.index)
+    plt.tight_layout()
+    plt.ylabel(df_confusion.index.name)
+    plt.xlabel(df_confusion.columns.name)
+    plt.show()
 
+
+class NN(object):
     """A Network that uses Sigmoid activation function."""
 
     def __init__(self):
         self.nodes = []
         self.layers = {}
         self.weights = {}
-        self.j_history = []
         self.grads = {}
         self.regs = {}
         self.dels = {}
@@ -103,10 +115,10 @@ class NN(object):
         m, n = x.shape
         reg2 = 0
         for i in range(len(weights)):
-            reg2 += np.sum(weights['w%d' % (i + 1)][:, 1:]**2)
+            reg2 += np.sum(weights['w%d' % (i + 1)][:, 1:] ** 2)
 
-        j = (-1/m) * np.sum(y.T.dot(np.log(layers['a%d' % (len(layers))])) +
-                            (1 - y).T.dot(np.log(1 - layers['a%d' % (len(layers))]))) + (lamda/(2*m)) * reg2
+        j = (-1 / m) * np.sum(y.T.dot(np.log(layers['a%d' % (len(layers))])) +
+                              (1 - y).T.dot(np.log(1 - layers['a%d' % (len(layers))]))) + (lamda / (2 * m)) * reg2
 
         return j
 
@@ -122,6 +134,7 @@ class NN(object):
         # ------------- Training
         start = time.time()
         self.predict(data, predict=False, rand_weights=True)
+        j_history = []
 
         for epoch in range(epochs):
             layers, weights = self.predict(data, predict=False, rand_weights=False)
@@ -130,11 +143,11 @@ class NN(object):
             # ----------------- Calculating del terms
             delta1 = layers['a%d' % (len(layers))] - labels
             delta = delta1.dot(weights['w%d' % (len(weights))]) * layers['a%d' % (len(layers) - 1)] * \
-                (1 - layers['a%d' % (len(layers) - 1)])
+                    (1 - layers['a%d' % (len(layers) - 1)])
 
             dels = {
                 'del%d' % (len(layers)): delta1,
-                'del%d' % (len(layers)-1): delta
+                'del%d' % (len(layers) - 1): delta
             }
 
             for i in range(len(weights) - 2):
@@ -144,20 +157,21 @@ class NN(object):
 
             # ------------------ Calculating grad and regularization terms
             grads = {
-                'grad%d' % (len(weights)): (1/m) * (dels['del%d' % (len(layers))].T.dot(layers['a%d' % (len(weights))]))
-              }
+                'grad%d' % (len(weights)): (1 / m) * (
+                    dels['del%d' % (len(layers))].T.dot(layers['a%d' % (len(weights))]))
+            }
 
             regs = {
-                'reg%d' % (len(weights)): (lamda/m) * weights['w%d' % (len(weights))]
+                'reg%d' % (len(weights)): (lamda / m) * weights['w%d' % (len(weights))]
             }
 
             for i in range(len(weights) - 1):
-                grad = (1/m) * \
+                grad = (1 / m) * \
                        (dels['del%d' % (len(layers) - 1 - i)][:, 1:].T.dot(layers['a%d' % (len(weights) - 1 - i)]))
 
                 grads['grad%d' % (len(weights) - 1 - i)] = grad
 
-                reg = (lamda/m) * weights['w%d' % (len(weights) - 1 - i)]
+                reg = (lamda / m) * weights['w%d' % (len(weights) - 1 - i)]
                 reg[:, 0] = 0
                 regs['reg%d' % (len(weights) - 1 - i)] = reg
 
@@ -167,7 +181,7 @@ class NN(object):
             self.dels = dels
 
             # ----------------- Updating Parameters
-            for i in range(1, len(weights)+1):
+            for i in range(1, len(weights) + 1):
                 weights['w%d' % i] = weights['w%d' % i] - alpha * grads['grad%d' % i] - regs['reg%d' % i]
 
             self.layers = layers
@@ -176,7 +190,7 @@ class NN(object):
             # ----------------- Analysis steps
 
             j = float(self.cost(data, labels, lamda=lamda, use_trained=True))
-            self.j_history.append(j)
+            j_history.append(j)
 
             print("\r" + "{}% |".format(int(100 * i / epochs) + 1) + '#' * int((int(100 * i / epochs) + 1) / 5) +
                   ' ' * (20 - int((int(100 * i / epochs) + 1) / 5)) + '|',
@@ -185,10 +199,16 @@ class NN(object):
             acc = 100 * np.sum(np.argmax(layers['a%d' % (len(layers))], axis=1) == np.argmax(labels, axis=1)) / m
             print('cost: %0.2f\tacc.: %0.2f%%' % (j, acc))
 
-        plt.plot(range(epochs), self.j_history)
+        print("Displaying Cost vs Iterations graph...")
+        plt.plot(range(epochs), j_history)
         plt.xlabel('Iterations')
         plt.ylabel('Cost')
         plt.show()
+
+        cm = pd.crosstab(np.argmax(self.layers['a%d' % (len(self.layers))], axis=1), np.argmax(labels, axis=1),
+                         rownames=['Actual'], colnames=['Predicted'])
+        print("Plotting Confusion Matrix")
+        plot_confusion_matrix(cm)
 
         end = time.time()
         print('Final cost: %0.2f\tFinal acc.: %0.2f%%' % (j, acc))
