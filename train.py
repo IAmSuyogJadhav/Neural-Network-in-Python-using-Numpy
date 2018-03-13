@@ -5,6 +5,8 @@ import time
 
 
 def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
+    """Used to plot confusion matrix."""
+    
     plt.matshow(df_confusion, cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -21,13 +23,20 @@ class NN(object):
     """A Network that uses Sigmoid activation function."""
 
     def __init__(self):
+        
+        # Hyper Parameters
         self.nodes = []
         self.layers = {}
         self.weights = {}
+        self.n_classes = 0
+        
+        # For Debugging
         self.grads = {}
         self.regs = {}
         self.dels = {}
-        self.n_classes = 0
+        
+        # For analysis
+        self.history = {}
 
     def add_layer(self, n_nodes, output_layer=False):
         """Adds a layer of specified no. of output nodes."""
@@ -42,7 +51,9 @@ class NN(object):
 
         return 1 / (1 + np.exp(-z))
 
-    def predict(self, x, predict=True, argmax=True, rand_weights=True):
+    def predict(self, x, predict=True, argmax=True, rand_weights=False):
+        """Performs a pass of forwrd propagation."""
+        
         np.random.seed(777)
         nodes = self.nodes
         layers = {}
@@ -52,7 +63,8 @@ class NN(object):
         m = x.shape[0]
         x = np.append(np.ones(m).reshape(m, 1), x, axis=1)
         layers['a%d' % 1] = x
-
+        
+        # --------------- for dense layers
         if rand_weights:
             for i in range(len(nodes)):
                 m, n = x.shape
@@ -78,6 +90,8 @@ class NN(object):
                 weights['w%d' % (len(weights) + 1)] = w
 
         else:
+            
+            # --------------- for dense layers
             for i in range(len(nodes)):
                 m, n = x.shape
                 # x = np.append(np.ones(m).reshape(m, 1), x, axis=1)
@@ -109,8 +123,11 @@ class NN(object):
         else:
             return layers, weights
 
-    def cost(self, x, y, lamda=0, use_trained=True):
-        layers, weights = self.predict(x, predict=False) if not use_trained else self.layers, self.weights
+    def cost(self, x, y, lamda=0):
+        """Calculas the cost for given data and labels."""
+        
+        weights = self.weights
+        layers, _ = self.predict(x, predict=False)
 
         m, n = x.shape
         reg2 = 0
@@ -122,7 +139,9 @@ class NN(object):
 
         return j
 
-    def fit(self, data, labels, alpha=0.01, lamda=0, epochs=50):
+    def fit(self, data, labels, test=[], test_labels=[], alpha=0.01, lamda=0, epochs=50):
+        """Performs specified no. of epoches. 
+        one epoch = one pass of forward propagation + one pass of backpropagation. """
 
         # ----------- Checking data format
         assert self.n_classes, 'You must have the output layer. Set output_layer=True while adding the output layer.'
@@ -130,11 +149,14 @@ class NN(object):
         assert (labels.shape[1] == self.n_classes), 'The labels should have same no. of columns as there are ' \
                                                     'classes. Convert labels into categorical form before training.'
         assert (epochs > 0), 'No. of epochs must be greater than or equal to 1.'
+        assert (len(test) == len(test_labels)), "Invalid combination of test set and test_labels provided." \
+                                                    "Please check the provided test and test_labels."
 
         # ------------- Training
         start = time.time()
         self.predict(data, predict=False, rand_weights=True)
         j_history = []
+        j_test_history = []
 
         for epoch in range(epochs):
             layers, weights = self.predict(data, predict=False, rand_weights=False)
@@ -189,7 +211,7 @@ class NN(object):
 
             # ----------------- Analysis steps
 
-            j = float(self.cost(data, labels, lamda=lamda, use_trained=True))
+            j = float(self.cost(data, labels, lamda=lamda))
             j_history.append(j)
 
             print("\r" + "{}% |".format(int(100 * i / epochs) + 1) + '#' * int((int(100 * i / epochs) + 1) / 5) +
@@ -197,12 +219,34 @@ class NN(object):
                   end="") if not i % (epochs / 100) else print("", end="")
 
             acc = 100 * np.sum(np.argmax(layers['a%d' % (len(layers))], axis=1) == np.argmax(labels, axis=1)) / m
-            print('cost: %0.2f\tacc.: %0.2f%%' % (j, acc))
+            
+            if len(test):
+                m1, n1 = test.shape
+                j_test = float(self.cost(test, test_labels, lamda=lamda))
+                j_test_history.append(j_test)
+                test_prediction = self.predict(test)
+                acc_test = 100 * np.sum(test_prediction == np.argmax(test_labels, axis=1)) / m1
+                print(acc_test, type(acc_test))
+                print('Train cost: %0.2f\tTrain acc.: %0.2f%%\tTest cost: %0.2f\tTest acc.: %0.2f%%' % (j, acc, j_test, acc_test))
+                
+            else:
+                print('cost: %0.2f\tacc.: %0.2f%%' % (j, acc))
 
         print("Displaying Cost vs Iterations graph...")
-        plt.plot(range(epochs), j_history)
+        
+        if len(test):
+            plot_test, =plt.plot(range(epochs), j_test_history, 'r')
+        
+        plot_train, =plt.plot(range(epochs), j_history, 'b')        
         plt.xlabel('Iterations')
         plt.ylabel('Cost')
+        
+        if len(test):
+            plot_test, =plt.plot(range(epochs), j_test_history, 'r')
+            plt.legend([plot_test, plot_train], ['Test', "Train"])
+        else:
+            plt.legend([plot_train], ["Train"])
+            
         plt.show()
 
         cm = pd.crosstab(np.argmax(self.layers['a%d' % (len(self.layers))], axis=1), np.argmax(labels, axis=1),
@@ -211,9 +255,26 @@ class NN(object):
         plot_confusion_matrix(cm)
 
         end = time.time()
-        print('Final cost: %0.2f\tFinal acc.: %0.2f%%' % (j, acc))
+        
+        if len(test):
+            print('Final train cost: %0.2f\tFinal train acc.: %0.2f%%\tFinal test cost: %0.2f\tFinal test acc.: %0.2f%%' % (j, acc, j_test, acc_test))
+        else:
+            print('Final cost: %0.2f\tFinal acc.: %0.2f%%' % (j, acc))
         print('Execution time: %0.2fs' % (end - start))
-
+        
+        self.history['run%d' % (len(self.train_history) + 1)] = {
+            'layers': self.nodes,
+            'alpha': alpha,
+            'lambda': lamda,
+            'epochs': epochs,
+            'Final train acc.': acc,
+            'Final train cost': j,
+            'Final test acc.': acc_test if len(test) else 'N/A',
+            'Final test cost': j_test if len(test) else 'N/A',
+            'Execution time': (end - start)
+        }
+        
+# --------------- Sample run
 
 if __name__ == "__main__":
     x = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6], [5, 6, 7], [6, 7, 8], [7, 8, 9]])  # Test data
