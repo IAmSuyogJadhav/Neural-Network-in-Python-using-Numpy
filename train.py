@@ -39,7 +39,9 @@ class NN(object):
         self.history = {}
 
     def add_layer(self, n_nodes, output_layer=False):
-        """Adds a layer of specified no. of output nodes."""
+        """Adds a layer of specified no. of output nodes.  
+        For the output layer, the flag  ```output_layer``` must be True.
+        A network must have an output layer"""
 
         if not output_layer:
             self.nodes.append(n_nodes)
@@ -52,7 +54,12 @@ class NN(object):
         return 1 / (1 + np.exp(-z))
 
     def predict(self, x, predict=True, argmax=True, rand_weights=False):
-        """Performs a pass of forwrd propagation."""
+        """
+        Performs a pass of forwrd propagation.
+        If ```predict``` is set to ```True```, trained weights are used
+        and predictions are returned in a single vector(if `argmax` is set to `True`) 
+        with labels from 0 to (`n_classes` - 1).
+        """
         
         np.random.seed(777)
         nodes = self.nodes
@@ -124,7 +131,7 @@ class NN(object):
             return layers, weights
 
     def cost(self, x, y, lamda=0):
-        """Calculas the cost for given data and labels."""
+        """Calculates the cost for given data and labels, with trained weights."""
         
         weights = self.weights
         layers, _ = self.predict(x, predict=False)
@@ -140,8 +147,10 @@ class NN(object):
         return j
 
     def fit(self, data, labels, test=[], test_labels=[], alpha=0.01, lamda=0, epochs=50):
-        """Performs specified no. of epoches. 
-        one epoch = one pass of forward propagation + one pass of backpropagation. """
+        """
+        Performs specified no. of epoches. 
+        One epoch = one pass of forward propagation + one pass of backpropagation. 
+        """
 
         # ----------- Checking data format
         assert self.n_classes, 'You must have the output layer. Set output_layer=True while adding the output layer.'
