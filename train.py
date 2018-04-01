@@ -62,10 +62,10 @@ class NN(object):
 
     def predict(self, x, predict=True, argmax=True, rand_weights=False):
         """
-        Performs a pass of forwrd propagation.
-        If ```predict``` is set to ```True```, trained weights are used
-        and predictions are returned in a single vector(if `argmax` is set to `True`) 
-        with labels from 0 to (`n_classes` - 1).
+        Performs a pass of forward propagation.
+        If predict is set to True, trained weights are used
+        and predictions are returned in a single vector(if argmax is set to True) 
+        with labels from 0 to (n_classes - 1).
         """
         
         np.random.seed(777)
