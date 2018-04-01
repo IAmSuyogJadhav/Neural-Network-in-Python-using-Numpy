@@ -5,7 +5,9 @@ import time
 
 
 def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gray_r):
-    """Used to plot confusion matrix."""
+    """
+    Used to plot confusion matrix.
+    """
     
     plt.matshow(df_confusion, cmap=cmap)
     plt.title(title)
@@ -20,11 +22,12 @@ def plot_confusion_matrix(df_confusion, title='Confusion matrix', cmap=plt.cm.gr
 
 
 class NN(object):
-    """A Network that uses Sigmoid activation function."""
+    """
+    A network that uses Sigmoid activation function.
+    """
 
     def __init__(self):
         
-        # Hyper Parameters
         self.nodes = []
         self.layers = {}
         self.weights = {}
@@ -39,9 +42,11 @@ class NN(object):
         self.history = {}
 
     def add_layer(self, n_nodes, output_layer=False):
-        """Adds a layer of specified no. of output nodes.  
-        For the output layer, the flag  ```output_layer``` must be True.
-        A network must have an output layer"""
+        """
+        Adds a layer of specified no. of output nodes.  
+        For the output layer, the flag  output_layer must be True.
+        A network must have an output layer.
+        """
 
         if not output_layer:
             self.nodes.append(n_nodes)
@@ -49,7 +54,9 @@ class NN(object):
             self.n_classes = n_nodes
 
     def sigmoid(self, z):
-        """Calculates the sigmoid activation function."""
+        """
+        Calculates the sigmoid activation function.
+        """
 
         return 1 / (1 + np.exp(-z))
 
