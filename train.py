@@ -138,7 +138,9 @@ class NN(object):
             return layers, weights
 
     def cost(self, x, y, lamda=0):
-        """Calculates the cost for given data and labels, with trained weights."""
+        """
+        Calculates the cost for given data and labels, with trained weights.
+        """
         
         weights = self.weights
         layers, _ = self.predict(x, predict=False)
